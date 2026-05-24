@@ -238,17 +238,42 @@ def main():
     score = 0
 
     run = True
+    segurando_baixo = False #tecla para baixo pressionada ou nao
+    segurando_esquerda = False
+    segurando_direita = False
+
+    tempo_lateral = 0
+    velocidade_lateral = 0.15
+
     while run:
         grid = criar_grid(travada_pos)
-        queda_tempo += clock.get_rawtime()
+        passa_tempo = clock.get_rawtime()
+        queda_tempo += passa_tempo
+        tempo_lateral += passa_tempo
+        
         clock.tick()
 
-        if queda_tempo / 1000 > 0.27:
+        velocidade_atual = 0.05 if segurando_baixo == True else 0.27
+
+        if queda_tempo / 1000 > velocidade_atual:
             queda_tempo = 0
             corrente_peca.y += 1
             if not (peça_valida(corrente_peca, grid)) and corrente_peca.y > 0:
                 corrente_peca.y -= 1
                 troca_peca = True
+
+        if tempo_lateral / 1000 > velocidade_lateral:
+            tempo_lateral = 0
+
+            if segurando_esquerda:
+                corrente_peca.x -= 1
+                if not peça_valida(corrente_peca, grid):
+                    corrente_peca.x += 1
+                    
+            elif segurando_direita:
+                corrente_peca.x += 1
+                if not peça_valida(corrente_peca, grid):
+                    corrente_peca.x -= 1
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -258,21 +283,32 @@ def main():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
+                    segurando_esquerda = True
+                    tempo_lateral = 0
                     corrente_peca.x -= 1
                     if not peça_valida(corrente_peca, grid):
                         corrente_peca.x += 1
                 if event.key == pygame.K_RIGHT:
+                    segurando_direita = True
+                    tempo_lateral = 0
                     corrente_peca.x += 1
                     if not peça_valida(corrente_peca, grid):
                         corrente_peca.x -= 1
                 if event.key == pygame.K_DOWN:
-                    corrente_peca.y += 1
+                    segurando_baixo = True
                     if not peça_valida(corrente_peca, grid):
                         corrente_peca.y -= 1
                 if event.key == pygame.K_UP:
                     corrente_peca.rotacao = corrente_peca.rotacao + 1 % len(corrente_peca.formato)
                     if not peça_valida(corrente_peca, grid):
                         corrente_peca.rotacao = corrente_peca.rotacao - 1 % len(corrente_peca.formato)
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_DOWN:
+                    segurando_baixo = False #volta para velocidade normal
+                if event.key == pygame.K_LEFT:   
+                    segurando_esquerda = False
+                if event.key == pygame.K_RIGHT:  
+                    segurando_direita = False
 
         forma_pos = converter_formato_forma(corrente_peca)
 
