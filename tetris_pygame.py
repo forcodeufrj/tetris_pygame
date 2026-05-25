@@ -171,6 +171,7 @@ def desenhar_grid(surface, grid):
 
 def limpar_linhas(grid, travada_pos):
     inc = 0
+    ind = 0
     for i in range(len(grid)-1, -1, -1):
         linha = grid[i]
         if (0, 0, 0) not in linha:
@@ -189,6 +190,20 @@ def limpar_linhas(grid, travada_pos):
                 nova_chave = (x, y + inc)
                 travada_pos[nova_chave] = travada_pos.pop(chave)
     return inc
+
+def pontuacao_linhas(num_linhas, linhas_presente, pontuacao_atual, level_atual):
+    if num_linhas == 0:
+        return linhas_presente, pontuacao_atual, level_atual
+
+    ponto_por_linha = {1: 10, 2: 40, 3: 80, 4: 150}
+    linhas_presente += num_linhas
+    pontos_base = ponto_por_linha.get(num_linhas, 150)
+    pontuacao_atual += pontos_base * level_atual
+
+    if linhas_presente / 10 > level_atual:
+        level_atual += 1
+            
+    return linhas_presente, pontuacao_atual, level_atual
 
 def desenhar_proxima_forma(peca, surface):
     fonte = pygame.font.SysFont('', 30)
@@ -230,25 +245,51 @@ def main():
     grid = criar_grid(travada_pos)
 
     troca_peca = False
-    rodada = 0
     corrente_peca = obter_forma()
     próxima_peca = obter_forma()
     clock = pygame.time.Clock()
     queda_tempo = 0
-    score = 0
+    level_atual = 1
+    pontuacao_atual = 0
+    linhas_presente = 0
 
     run = True
+    segurando_baixo = False 
+    segurando_esquerda = False
+    segurando_direita = False
+
+    tempo_lateral = 0
+    velocidade_lateral = 0.15
+
     while run:
         grid = criar_grid(travada_pos)
-        queda_tempo += clock.get_rawtime()
+        passa_tempo = clock.get_rawtime()
+        queda_tempo += passa_tempo
+        tempo_lateral += passa_tempo
+        
         clock.tick()
 
-        if queda_tempo / 1000 > 0.27:
+        velocidade_atual = 0.05 if segurando_baixo == True else 0.27
+
+        if queda_tempo / 1000 > velocidade_atual:
             queda_tempo = 0
             corrente_peca.y += 1
             if not (peça_valida(corrente_peca, grid)) and corrente_peca.y > 0:
                 corrente_peca.y -= 1
                 troca_peca = True
+
+        if tempo_lateral / 1000 > velocidade_lateral:
+            tempo_lateral = 0
+
+            if segurando_esquerda:
+                corrente_peca.x -= 1
+                if not peça_valida(corrente_peca, grid):
+                    corrente_peca.x += 1
+                    
+            elif segurando_direita:
+                corrente_peca.x += 1
+                if not peça_valida(corrente_peca, grid):
+                    corrente_peca.x -= 1
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -258,21 +299,32 @@ def main():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
+                    segurando_esquerda = True
+                    tempo_lateral = 0
                     corrente_peca.x -= 1
                     if not peça_valida(corrente_peca, grid):
                         corrente_peca.x += 1
                 if event.key == pygame.K_RIGHT:
+                    segurando_direita = True
+                    tempo_lateral = 0
                     corrente_peca.x += 1
                     if not peça_valida(corrente_peca, grid):
                         corrente_peca.x -= 1
                 if event.key == pygame.K_DOWN:
-                    corrente_peca.y += 1
+                    segurando_baixo = True
                     if not peça_valida(corrente_peca, grid):
                         corrente_peca.y -= 1
                 if event.key == pygame.K_UP:
-                    corrente_peca.rotacao = corrente_peca.rotacao + 1 % len(corrente_peca.formato)
+                    corrente_peca.rotacao = (corrente_peca.rotacao + 1) % len(corrente_peca.formato)
                     if not peça_valida(corrente_peca, grid):
-                        corrente_peca.rotacao = corrente_peca.rotacao - 1 % len(corrente_peca.formato)
+                        corrente_peca.rotacao = (corrente_peca.rotacao - 1) % len(corrente_peca.formato)
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_DOWN:
+                    segurando_baixo = False 
+                if event.key == pygame.K_LEFT:   
+                    segurando_esquerda = False
+                if event.key == pygame.K_RIGHT:  
+                    segurando_direita = False
 
         forma_pos = converter_formato_forma(corrente_peca)
 
@@ -288,9 +340,15 @@ def main():
             corrente_peca = próxima_peca
             próxima_peca = obter_forma()
             troca_peca = False
-            score += limpar_linhas(grid, travada_pos) * 10
+            
+            # CORREÇÃO DA CHAMADA: Verifica quantas linhas foram limpas e computa os pontos
+            linhas_eliminadas = limpar_linhas(grid, travada_pos)
+            linhas_presente, pontuacao_atual, level_atual = pontuacao_linhas(
+                linhas_eliminadas, linhas_presente, pontuacao_atual, level_atual
+            )
 
-        desenhar_janela(janela, grid, score)
+        # Passando 'pontuacao_atual' para desenhar os pontos corretos na tela
+        desenhar_janela(janela, grid, pontuacao_atual)
         desenhar_proxima_forma(próxima_peca, janela)
         pygame.display.update()
 
@@ -319,7 +377,7 @@ def draw_text_middle(text, size, color, surface):
     fonte = pygame.font.SysFont('', size, bold=True)
     label = fonte.render(text, 1, color)
 
-    surface.blit(label, (jogo_topo_esquerdo_x + largura_jogo / 2 - (label.get_width() / 2), jogo_topo_esquerdo_y + altura_jogo / 2 - (label.get_height() / 2)))
+    surface.blit(label, (jogo_topo_esquerdo_x + largura_jogo / 2 - (label.get_width() // 2), jogo_topo_esquerdo_y + altura_jogo / 2 - (label.get_height() // 2)))
 
 janela = pygame.display.set_mode((largura_janela, altura_janela))
 pygame.display.set_caption('for_tetris')
