@@ -252,6 +252,9 @@ def main():
     level_atual = 1
     pontuacao_atual = 0
     linhas_presente = 0
+    contador_velocidade = 0
+    velocidade_atualizando = 0.27
+    pontos_para_proximo_nivel = 200
 
     run = True
     segurando_baixo = False 
@@ -260,6 +263,7 @@ def main():
 
     tempo_lateral = 0
     velocidade_lateral = 0.15
+    delta_velocidade = 0
 
     while run:
         grid = criar_grid(travada_pos)
@@ -268,8 +272,19 @@ def main():
         tempo_lateral += passa_tempo
         
         clock.tick()
+        contador_velocidade = pontuacao_atual // pontos_para_proximo_nivel
+        temp_velocidade = contador_velocidade
+        contador_velocidade -= delta_velocidade
 
-        velocidade_atual = 0.05 if segurando_baixo == True else 0.27
+        velocidade_atualizando -= (contador_velocidade * 0.02)
+
+        if(temp_velocidade > delta_velocidade):
+            delta_velocidade = temp_velocidade
+
+        velocidade_atual = 0.05 if segurando_baixo == True else velocidade_atualizando
+
+        if velocidade_atual < 0.05:
+            velocidade_atual = 0.05
 
         if queda_tempo / 1000 > velocidade_atual:
             queda_tempo = 0
