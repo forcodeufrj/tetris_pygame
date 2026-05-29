@@ -165,9 +165,9 @@ def desenhar_grid(surface, grid):
         for j in range(len(grid[i])):
             pygame.draw.rect(surface, grid[i][j], (j * bloco_tamanho + jogo_topo_esquerdo_x, i * bloco_tamanho + jogo_topo_esquerdo_y, bloco_tamanho, bloco_tamanho), 0)
     for i in range(len(grid)):
-        pygame.draw.line(surface, (128, 128, 128), (jogo_topo_esquerdo_x, jogo_topo_esquerdo_y + i * bloco_tamanho), (jogo_topo_esquerdo_x + largura_jogo, jogo_topo_esquerdo_y + i * bloco_tamanho))
+        pygame.draw.line(surface, (10, 10, 10), (jogo_topo_esquerdo_x, jogo_topo_esquerdo_y + i * bloco_tamanho), (jogo_topo_esquerdo_x + largura_jogo, jogo_topo_esquerdo_y + i * bloco_tamanho))
         for j in range(len(grid[i])):
-            pygame.draw.line(surface, (128, 128, 128), (jogo_topo_esquerdo_x + j * bloco_tamanho, jogo_topo_esquerdo_y), (jogo_topo_esquerdo_x + j * bloco_tamanho, jogo_topo_esquerdo_y + altura_jogo))
+            pygame.draw.line(surface, (10, 10, 10), (jogo_topo_esquerdo_x + j * bloco_tamanho, jogo_topo_esquerdo_y), (jogo_topo_esquerdo_x + j * bloco_tamanho, jogo_topo_esquerdo_y + altura_jogo))
 
 def limpar_linhas(grid, travada_pos):
     inc = 0
@@ -252,9 +252,6 @@ def main():
     level_atual = 1
     pontuacao_atual = 0
     linhas_presente = 0
-    contador_velocidade = 0
-    velocidade_atualizando = 0.27
-    pontos_para_proximo_nivel = 200
 
     run = True
     segurando_baixo = False 
@@ -263,7 +260,6 @@ def main():
 
     tempo_lateral = 0
     velocidade_lateral = 0.15
-    delta_velocidade = 0
 
     while run:
         grid = criar_grid(travada_pos)
@@ -272,19 +268,8 @@ def main():
         tempo_lateral += passa_tempo
         
         clock.tick()
-        contador_velocidade = pontuacao_atual // pontos_para_proximo_nivel
-        temp_velocidade = contador_velocidade
-        contador_velocidade -= delta_velocidade
 
-        velocidade_atualizando -= (contador_velocidade * 0.02)
-
-        if(temp_velocidade > delta_velocidade):
-            delta_velocidade = temp_velocidade
-
-        velocidade_atual = 0.05 if segurando_baixo == True else velocidade_atualizando
-
-        if velocidade_atual < 0.05:
-            velocidade_atual = 0.05
+        velocidade_atual = 0.05 if segurando_baixo == True else 0.27
 
         if queda_tempo / 1000 > velocidade_atual:
             queda_tempo = 0
